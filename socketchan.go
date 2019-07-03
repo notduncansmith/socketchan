@@ -17,11 +17,12 @@ type Client struct {
 }
 
 // NewClient returns a new client whose channels will buffer up to `bufferSize` messages
-func NewClient(endpoint url.URL, bufferSize int) Client {
+func NewClient(endpoint url.URL, bufferSize int) *Client {
 	incoming := make(chan []byte, bufferSize)
 	outgoing := make(chan []byte, bufferSize)
 	close := make(chan struct{})
-	return Client{endpoint, incoming, outgoing, close}
+	client := Client{endpoint, incoming, outgoing, close}
+	return &client
 }
 
 // Connect opens the connection to the WebSocket endpoint and starts goroutines to populate the channels
