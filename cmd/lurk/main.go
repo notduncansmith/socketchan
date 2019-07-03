@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/url"
 
@@ -8,10 +9,16 @@ import (
 )
 
 func main() {
-	u, _ := url.Parse("ws://localhost:8080/room/demo")
+	flag.Parse()
+	var addr = flag.Arg(0)
+	u, err := url.Parse(addr)
+	if err != nil {
+		panic(err)
+	}
+	println("Connecting to " + u.String())
 	client := sc.NewClient(*u, 1024)
 
-	err := client.Connect()
+	err = client.Connect()
 
 	if err != nil {
 		log.Fatalln("dial err", err)
