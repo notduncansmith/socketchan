@@ -69,10 +69,11 @@ func (c *Client) Connect() error {
 }
 
 // Close closes the WebSocket connection, which fires the OnClose callback
-func (c *Client) Close() {
+func (c *Client) Close() error {
 	err := c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
-		log.Println("write close err:", err)
+		return err
 	}
 	close(c.Outgoing)
+	return nil
 }
