@@ -21,11 +21,24 @@ func main() {
 
 	err = client.Connect()
 
+	if err != nil {
+		println("Error connecting to " + u.String() + " " + err.Error())
+		panic(err)
+	}
+
 	ticks := time.NewTicker(5 * time.Second)
 
-	for t := range ticks.C {
-		msg := "{\"time\": \"" + t.String() + "\"}"
-		log.Println("Sending msg: " + msg)
-		client.Outgoing <- []byte(msg)
+	for {
+		select {
+		case t := <-ticks.C:
+			msg := "{\"time\": \"" + t.String() + "\"}"
+			log.Println("Sending msg: " + msg)
+			client.Outgoing <- []byte(msg)
+		case _, stillOpen := <-client.Incoming:
+			if !stillOpen {
+				log.Println("Socket closed")
+				return
+			}
+		}
 	}
 }

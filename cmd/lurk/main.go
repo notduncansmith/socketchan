@@ -30,7 +30,7 @@ func main() {
 		select {
 		case rawMsg, stillOpen := <-client.Incoming:
 			if !stillOpen {
-				log.Println("Socket closed, exiting")
+				log.Println("Socket closed")
 				return
 			}
 			log.Println("\n--\n" + string(rawMsg) + "\n--\n")
