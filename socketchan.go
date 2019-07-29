@@ -10,18 +10,17 @@ import (
 
 // Client is a Websocket client that connects to an endpoint
 type Client struct {
+	Conn     *websocket.Conn
 	Endpoint url.URL
 	Incoming chan []byte
 	Outgoing chan []byte
-	Close    chan struct{}
 }
 
-// NewClient returns a new client whose channels will buffer up to `bufferSize` messages
+// NewClient returns a new Client whose channels will buffer up to `bufferSize` messages
 func NewClient(endpoint url.URL, bufferSize int) *Client {
 	incoming := make(chan []byte, bufferSize)
 	outgoing := make(chan []byte, bufferSize)
-	close := make(chan struct{})
-	client := Client{endpoint, incoming, outgoing, close}
+	client := Client{nil, endpoint, incoming, outgoing}
 	return &client
 }
 
@@ -35,14 +34,16 @@ func (c *Client) Connect() error {
 		return err
 	}
 
+	c.Conn = conn
+
 	go func() {
-		defer close(c.Close)
 		defer close(c.Incoming)
+
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				if strings.Contains(err.Error(), "1006") {
-					log.Println("socket closed")
+					// socket closed
 					return
 				}
 				log.Println("read err:", err)
@@ -55,25 +56,23 @@ func (c *Client) Connect() error {
 	go func() {
 		defer conn.Close()
 
-		for {
-			select {
-			case out := <-c.Outgoing:
-				err := conn.WriteMessage(websocket.TextMessage, out)
-				if err != nil {
-					log.Println("write err:", err)
-					return
-				}
-			case _, stillOpen := <-c.Close:
-				if !stillOpen {
-					err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-					if err != nil {
-						log.Println("write close err:", err)
-					}
-					return
-				}
+		for out := range c.Outgoing {
+			err := conn.WriteMessage(websocket.TextMessage, out)
+			if err != nil {
+				log.Println("write err:", err)
+				return
 			}
 		}
 	}()
 
 	return nil
+}
+
+// Close closes the WebSocket connection, which fires the OnClose callback
+func (c *Client) Close() {
+	err := c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		log.Println("write close err:", err)
+	}
+	close(c.Outgoing)
 }
