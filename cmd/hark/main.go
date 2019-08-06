@@ -19,9 +19,7 @@ func main() {
 	println("Connecting to " + u.String())
 	client := sc.NewClient(*u, 1024)
 
-	err = client.Connect()
-
-	if err != nil {
+	if err = client.Connect(); err != nil {
 		println("Error connecting to " + u.String() + " " + err.Error())
 		panic(err)
 	}
@@ -36,8 +34,14 @@ func main() {
 			client.Outgoing <- []byte(msg)
 		case _, stillOpen := <-client.Incoming:
 			if !stillOpen {
-				log.Println("Socket closed")
-				return
+				log.Println("Socket closed, restarting in 3s")
+				ticks.Stop()
+				time.Sleep(3 * time.Second)
+				if err = client.Connect(); err != nil {
+					println("Error connecting to " + u.String() + " " + err.Error())
+					panic(err)
+				}
+				ticks = time.NewTicker(5 * time.Second)
 			}
 		}
 	}
