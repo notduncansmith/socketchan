@@ -45,11 +45,6 @@ func (c *Client) Connect() error {
 	}
 
 	c.Conn = conn
-	c.doWithLock(func() {
-		c.connected = true
-		c.Incoming = make(chan []byte, c.bufferSize)
-		c.Outgoing = make(chan []byte, c.bufferSize)
-	})
 
 	go func() {
 		defer c.Close()
@@ -87,10 +82,12 @@ func (c *Client) Connect() error {
 func (c *Client) Close() error {
 	c.doWithLock(func() {
 		if c.connected {
+			c.connected = false
 			c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			close(c.Incoming)
 			close(c.Outgoing)
-			c.connected = false
+			c.Incoming = make(chan []byte, c.bufferSize)
+			c.Outgoing = make(chan []byte, c.bufferSize)
 		}
 	})
 
