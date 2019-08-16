@@ -67,10 +67,12 @@ func (c *Client) Connect() error {
 		defer c.Close()
 
 		for out := range c.Outgoing {
-			err := conn.WriteMessage(websocket.TextMessage, out)
-			if err != nil {
-				log.Println("socketchan write err:", err)
-				return
+			if c.connected {
+				err := conn.WriteMessage(websocket.TextMessage, out)
+				if err != nil {
+					log.Println("socketchan write err:", err)
+					return
+				}
 			}
 		}
 	}()
