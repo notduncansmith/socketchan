@@ -44,6 +44,8 @@ func (c *Client) Connect() error {
 		return err
 	}
 
+	c.connected = true
+
 	c.Conn = conn
 
 	go func() {
@@ -67,7 +69,7 @@ func (c *Client) Connect() error {
 		defer c.Close()
 
 		for out := range c.Outgoing {
-			if c.connected {
+			if c.Connected() {
 				err := conn.WriteMessage(websocket.TextMessage, out)
 				if err != nil {
 					log.Println("socketchan write err:", err)
